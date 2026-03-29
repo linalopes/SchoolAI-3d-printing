@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect } from 'react';
-import { Excalidraw, convertToExcalidrawElements } from '@excalidraw/excalidraw';
+import {
+  Excalidraw,
+  CaptureUpdateAction,
+  convertToExcalidrawElements,
+  getCommonBounds,
+  getNonDeletedElements,
+  getSceneVersion,
+} from '@excalidraw/excalidraw';
 import type {
   ExcalidrawAppState,
   ExcalidrawElement,
@@ -46,50 +53,70 @@ interface OverlayViewportState {
 
 interface InternalExcalidrawApi {
   getSceneElements: () => readonly ExcalidrawElement[];
-  updateScene: (scene: { elements: readonly ExcalidrawElement[] }) => void;
-  getAppState?: () => Partial<ExcalidrawAppState>;
+  updateScene: (scene: {
+    elements?: readonly ExcalidrawElement[];
+    appState?: Partial<ExcalidrawAppState> & {
+      zoom?: { value: number };
+    };
+    captureUpdate?: (typeof CaptureUpdateAction)[keyof typeof CaptureUpdateAction];
+  }) => void;
+  getAppState?: () => Partial<ExcalidrawAppState> & {
+    offsetLeft: number;
+    offsetTop: number;
+  };
   getFiles?: () => Record<string, unknown>;
 }
 
-/** Calibrate with browser console; scene banner sits near x ≈ -3050. */
-const FIXED_INITIAL_SCROLL_X = 3100;
-const FIXED_INITIAL_SCROLL_Y = 350;
-const FIXED_INITIAL_ZOOM = 1;
+/** Initial zoom: 20% */
+const INITIAL_ZOOM_VALUE = 0.2;
+/** Padding from canvas viewport edges to content bbox (see Excalidraw sceneCoordsToViewportCoords). */
+const VIEWPORT_EDGE_PADDING = 60;
 
-/** TEMP: set to false or delete `logViewportDebug` usage to remove calibration logs. */
-const DEBUG_LOG_VIEWPORT = true;
+/**
+ * Excalidraw maps scene coords to viewport: (scene + scroll) * zoom + offset.
+ * Align minX/minY so the top-left of the content bbox sits `padding` px from the viewport origin.
+ */
+function scrollForLeftTopPadding(
+  minX: number,
+  minY: number,
+  zoom: number,
+  offsetLeft: number,
+  offsetTop: number,
+  padding: number,
+): { scrollX: number; scrollY: number } {
+  return {
+    scrollX: (padding - offsetLeft) / zoom - minX,
+    scrollY: (padding - offsetTop) / zoom - minY,
+  };
+}
 
 function mergeInitialAppState(
+  elements: readonly ExcalidrawElement[],
   base: Partial<ExcalidrawAppState> | undefined,
 ): Partial<ExcalidrawAppState> {
   const b = base || {};
   const prevZoom =
     b.zoom && typeof b.zoom === 'object' && 'value' in b.zoom ? b.zoom : {};
+  const nd = getNonDeletedElements(elements as never);
+  const [minX, minY] = getCommonBounds(nd as never);
+  const { scrollX, scrollY } = scrollForLeftTopPadding(
+    minX,
+    minY,
+    INITIAL_ZOOM_VALUE,
+    0,
+    0,
+    VIEWPORT_EDGE_PADDING,
+  );
 
   return {
     ...b,
-    scrollX: FIXED_INITIAL_SCROLL_X,
-    scrollY: FIXED_INITIAL_SCROLL_Y,
+    scrollX,
+    scrollY,
     zoom: {
       ...prevZoom,
-      value: FIXED_INITIAL_ZOOM,
+      value: INITIAL_ZOOM_VALUE,
     },
   };
-}
-
-function logViewportDebug(appState: {
-  scrollX?: number;
-  scrollY?: number;
-  zoom?: { value?: number };
-}) {
-  if (!DEBUG_LOG_VIEWPORT) {
-    return;
-  }
-  console.log('[excalidraw viewport]', {
-    scrollX: appState.scrollX,
-    scrollY: appState.scrollY,
-    zoom: appState.zoom?.value,
-  });
 }
 
 const isValidHttpsUrl = (value: string | undefined): value is string => {
@@ -255,7 +282,15 @@ export const ExcalidrawViewer: React.FC<ExcalidrawViewerProps> = ({
 }) => {
   type ExcalidrawOnChange = NonNullable<React.ComponentProps<typeof Excalidraw>['onChange']>;
 
-  const mergedInitialAppState = mergeInitialAppState(initialData.appState);
+  const mergedInitialAppState = mergeInitialAppState(
+    initialData.elements || [],
+    initialData.appState,
+  );
+
+  const sceneVersion = React.useMemo(
+    () => getSceneVersion((initialData.elements || []) as never),
+    [initialData.elements],
+  );
 
   const [overlayElements, setOverlayElements] = React.useState<OverlayEmbedElement[]>(
     toOverlayEmbedElements(initialData.elements || []),
@@ -263,12 +298,12 @@ export const ExcalidrawViewer: React.FC<ExcalidrawViewerProps> = ({
   const [overlayViewport, setOverlayViewport] = React.useState<OverlayViewportState>({
     scrollX: mergedInitialAppState.scrollX ?? 0,
     scrollY: mergedInitialAppState.scrollY ?? 0,
-    zoom: mergedInitialAppState.zoom?.value ?? 1,
+    zoom: mergedInitialAppState.zoom?.value ?? INITIAL_ZOOM_VALUE,
   });
   const [latestAppState, setLatestAppState] = React.useState<OverlayViewportState>({
     scrollX: mergedInitialAppState.scrollX ?? 0,
     scrollY: mergedInitialAppState.scrollY ?? 0,
-    zoom: mergedInitialAppState.zoom?.value ?? 1,
+    zoom: mergedInitialAppState.zoom?.value ?? INITIAL_ZOOM_VALUE,
   });
   const [selectedIframeId, setSelectedIframeId] = React.useState<string | null>(null);
   const [interactiveIframeId, setInteractiveIframeId] = React.useState<string | null>(null);
@@ -278,7 +313,7 @@ export const ExcalidrawViewer: React.FC<ExcalidrawViewerProps> = ({
   const preparedInitialData = React.useMemo(
     () => ({
       elements: initialData.elements || [],
-      appState: mergeInitialAppState(initialData.appState),
+      appState: mergeInitialAppState(initialData.elements || [], initialData.appState),
       files: initialData.files || {},
       scrollToContent: false,
     }),
@@ -290,7 +325,6 @@ export const ExcalidrawViewer: React.FC<ExcalidrawViewerProps> = ({
   const handleChange: ExcalidrawOnChange = useCallback(
     (elements, appState, files) => {
       void files;
-      logViewportDebug(appState);
       const nextViewport: OverlayViewportState = {
         scrollX: appState.scrollX ?? 0,
         scrollY: appState.scrollY ?? 0,
@@ -332,6 +366,71 @@ export const ExcalidrawViewer: React.FC<ExcalidrawViewerProps> = ({
   useEffect(() => {
     onApiReady(mockApi as ExcalidrawImperativeAPI);
   }, [mockApi, onApiReady]);
+
+  /**
+   * Refine scroll using real canvas offsets (offsetLeft/offsetTop) once the editor has laid out.
+   * Runs once per loaded scene (sceneVersion), not on every re-render.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    let outerRaf = 0;
+    let innerRaf = 0;
+
+    const applyRefinedViewport = () => {
+      if (cancelled) {
+        return;
+      }
+      const api = excalidrawApiRef.current;
+      if (!api) {
+        outerRaf = requestAnimationFrame(applyRefinedViewport);
+        return;
+      }
+      const elements = api.getSceneElements();
+      if (elements.length === 0) {
+        outerRaf = requestAnimationFrame(applyRefinedViewport);
+        return;
+      }
+      const st = api.getAppState?.();
+      if (
+        st == null ||
+        typeof st.offsetLeft !== 'number' ||
+        typeof st.offsetTop !== 'number'
+      ) {
+        outerRaf = requestAnimationFrame(applyRefinedViewport);
+        return;
+      }
+
+      const nd = getNonDeletedElements(elements as never);
+      const [minX, minY] = getCommonBounds(nd as never);
+      const { scrollX, scrollY } = scrollForLeftTopPadding(
+        minX,
+        minY,
+        INITIAL_ZOOM_VALUE,
+        st.offsetLeft,
+        st.offsetTop,
+        VIEWPORT_EDGE_PADDING,
+      );
+
+      api.updateScene({
+        appState: {
+          scrollX,
+          scrollY,
+          zoom: { value: INITIAL_ZOOM_VALUE },
+        },
+        captureUpdate: CaptureUpdateAction.NEVER,
+      });
+    };
+
+    innerRaf = requestAnimationFrame(() => {
+      outerRaf = requestAnimationFrame(applyRefinedViewport);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(innerRaf);
+      cancelAnimationFrame(outerRaf);
+    };
+  }, [sceneVersion]);
 
   const embedOverlays = React.useMemo(
     () => getEmbedOverlayItems(overlayElements, overlayViewport),
