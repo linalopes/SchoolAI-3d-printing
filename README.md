@@ -1,163 +1,169 @@
-# Excalidraw Interface
+# 3D printing as a process
 
-An experimental Excalidraw wrapper built with Vite + React + TypeScript.
-It keeps the native Excalidraw experience and adds a custom media overlay layer on top of rectangle placeholders. Depending on URL and metadata, embeds render as `img`, `video`, `object` (PDF), or `iframe`, and stay aligned during pan and zoom.
+**From intention to object** — *Artefact × Software × Hardware* — and how they talk to each other.
 
-## Features
+This repository hosts an interactive **Excalidraw** canvas for the diagram [`public/3d-printing-as-process.excalidraw`](public/3d-printing-as-process.excalidraw). The web app loads that scene so you can pan, zoom, and explore the full map. The sections below mirror the ideas captured in that file.
 
-- Native Excalidraw UI and canvas behavior
-- Scene loading from `public/sample.excalidraw` on startup
-- Media-aware overlay rendering driven by element `customData`
-- `https://` URL validation for embeds
-- Per-embed interaction behavior by content type
-- Contextual controls for selected embed placeholders:
-  - Interact / Lock
-  - Change URL
-  - Open in new tab
-- Native Excalidraw file actions (`Open`, `Save to...`, `Export image...`)
+---
 
-## Tech Stack
+## Artefact
 
-- Vite
-- React 18
-- TypeScript
-- `@excalidraw/excalidraw`
+*What role does it play?*
 
-## Getting Started
+The physical outcome is not “just a shape”: it carries **role**, **requirements**, **geometry**, and **connections** into the rest of the system.
+
+### 1. Role / purpose
+
+Examples called out in the diagram:
+
+- **Final object** — the piece is the goal.
+- **Mold / scaffold** — receives another material.
+- **Platform for a process** — hosts a workflow beyond the print itself.
+- **Negative or physical structure** — cavities, sacrificial geometry, or spatial definition.
+- **Connector / node** — sometimes *the piece is the joint*.
+
+### 2. Requirements
+
+Requirements steer both software and hardware:
+
+- **Structural** — load, impact, flex.
+- **Environmental** — heat, UV, water.
+- **Aesthetic** — layer lines, surface quality.
+- **Dimensional** — tight fit, tolerances.
+- **Interface / tool** — adapter, grip, jig.
+- **Experimental carrier** — growth, flow, texture.
+- **Economic** — cost, speed, weight.
+- **Life cycle** — repair, recycle.
+
+### 3. Geometry & volume
+
+- **Solid / shell / lattice / gyroid** — how matter is distributed.
+- **Scale & decomposition** — one piece or a tiled kit.
+- **Printability** — watertight / manifold models.
+- **Repair** — holes, normals.
+- **Checks** — wall thickness, dimensions.
+
+### 4. Connections
+
+Connections link the artefact to modules, other materials, or bodies (wearables, interfaces):
+
+- **Type** — fixed (glue, screw), reversible (snap, magnet, press), dynamic (hinge, gear, living hinge).
+- **2D → 3D** — overhangs and supports.
+- **Modularity** — tiles, parametric kits.
+
+> Sometimes the connection is not secondary — **the artefact is the joint.**
+
+*Requirements drive choices in hardware and software. Connections emerge from geometry and materials.*
+
+---
+
+## Software (pipeline)
+
+The diagram frames software as the bridge **from geometry to slicing** — translating intention into machine-ready instructions.
+
+### ① Geometry creation
+
+- **CAD / sculpt / scan** — classical modeling, organic forms, or captured reality.
+- **Mesh** — watertight, suitable for the next steps.
+
+**Geometry creation tools** (examples in the diagram):
+
+- Classical CAD — e.g. Fusion, SolidWorks.
+- Polygon / sculpting — e.g. Blender, ZBrush.
+- Parametric / generative — e.g. Grasshopper, OpenSCAD.
+- Captured 3D — scan / photogrammetry.
+
+### ② Model preparation
+
+- **Orientation / supports** — printability on the machine.
+- **Model preparation checks** — printability, wall thickness, dimensions.
+
+### ③ Slicing — core step
+
+Slicing **defines toolpath logic**. Parameters called out include:
+
+- Layer height, part orientation, infill pattern, toolpath perimeters, temperature, support strategy — culminating in **G-code / machine files**.
+
+### ④ Simulation & monitoring
+
+- **Structural simulation** — bend, deform, break.
+- **Process simulation** — warp, shrink, stress.
+- **Cameras & sensors** — error detection, warping, process monitoring.
+
+*Same logical pipeline can describe many different machines and materials — the diagram links this idea to “infinite variations” once the relationships are understood.*
+
+---
+
+## Hardware
+
+### Materials — by family
+
+| Family | Examples (from the diagram) |
+|--------|-----------------------------|
+| Metals | Steel, titanium, aluminum |
+| Polymers | PLA, ABS, PETG, nylon, TPU, resins (SLA/DLP) |
+| Minerals | Ceramics, concrete, plaster |
+| Biomaterials | Bio-inks, hydrogels |
+| Edible | Chocolate, sugar, dough |
+| Composites | Carbon fiber, wood fill |
+
+### Materials — by physical state
+
+- Solid filament — typical of **FDM / FFF**
+- Granules / pellets — large-format extrusion
+- Powder — **SLS**, **SLM**, binder jet
+- Liquid resin — **SLA**, **DLP**, LCD vat processes
+- Paste / gel — clay, food, bio
+- Sheet — lamination approaches
+
+### Processes = material × machine
+
+**Extrusion** — FDM / FFF: nozzle deposition with filament and pastes; strong fit for prototypes and custom parts.
+
+**Powder bed** — SLS, SLM, binder jet: powder fused or bonded selectively; complex shapes and metal parts.
+
+**Resin vat** — light-cured resin (SLA / DLP / LCD).
+
+**Special** — jetting, sheet lamination, DED (e.g. droplets, cut-and-bond stacks, metal repair).
+
+---
+
+## Key idea (from the diagram)
+
+> 3D printing is not just a way to make forms. It is a way to think about **matter**, **function**, and **process** as one system. Every choice — material, geometry, connection — is also a **design decision**.
+
+---
+
+## About this app
+
+The bundled viewer is a **Vite + React + TypeScript** shell around **`@excalidraw/excalidraw`**. On load it fetches `3d-printing-as-process.excalidraw` from `public/` and opens it in the native Excalidraw UI.
 
 ### Prerequisites
 
 - Node.js 16+
-- npm or yarn
 
-### Installation
+### Install and run
 
-1. Install dependencies:
 ```bash
 npm install
-```
-
-2. Start the development server:
-```bash
 npm run dev
 ```
 
-3. Open `http://localhost:3000`
+Open **http://localhost:3000** (port is set in `vite.config.ts`).
 
-### Build for Production
+### Build
 
 ```bash
 npm run build
+npm run preview   # optional: preview production build
 ```
 
-### Preview Production Build
+---
 
-```bash
-npm run preview
-```
+## Credits & contact
 
-## How it works
-
-The embed layer is intentionally implemented outside Excalidraw internals.
-
-1. **Rectangle placeholder in scene**
-   - A normal Excalidraw rectangle is used as the visual anchor.
-2. **Embed metadata in `customData`**
-   - The rectangle carries metadata (`embedType`, `embedKind`, `src`, `title`).
-   - `embedKind` can be explicit, or inferred from URL extension.
-3. **HTML overlay layer above canvas**
-   - React renders absolute-positioned media elements in a DOM layer over Excalidraw.
-   - Screen coordinates are derived from element position/size + Excalidraw scroll/zoom.
-4. **Kind-specific rendering**
-   - Images -> `<img>`
-   - Direct video URLs -> `<video controls>`
-   - PDFs -> `<object type="application/pdf">`
-   - Everything else -> `<iframe>`
-5. **Interaction model**
-   - Images are non-interactive.
-   - Videos are interactive by default (play/pause/scrub immediately).
-   - Web-page iframes use explicit `Interact / Lock`.
-   - Only one iframe/PDF embed can be in interactive mode at a time; `Esc` locks all.
-
-## Supported content
-
-- Direct image URLs (`.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.svg`)
-- Direct video URLs (`.mp4`, `.webm`, `.ogg`)
-- PDF files (`.pdf`)
-- Embeddable web pages (fallback `iframe` mode)
-- Some sites cannot be embedded due to browser/security policies (for example CSP or `X-Frame-Options`)
-
-## Usage
-
-1. Start the app and wait for the sample scene to load.
-2. Add an embed using the `Add iframe` action and provide a valid `https://` URL.
-3. Move/resize the rectangle placeholder directly in Excalidraw.
-4. Select the embed placeholder to open contextual actions:
-   - Toggle `Interact / Lock`
-   - Change URL
-   - Open in new tab
-5. Content behavior depends on URL type:
-   - Images fit the placeholder and remain non-interactive.
-   - Videos are immediately usable with native controls.
-   - PDFs and web pages use embed mode; web pages require `Interact` first.
-6. Pan and zoom the canvas; the overlay remains aligned with its placeholder.
-
-## Current limitations
-
-- Only `https://` embed URLs are accepted.
-- Some sites cannot be embedded due to browser security headers (e.g. `X-Frame-Options`, CSP).
-- Only one iframe/PDF embed can be interactive at a time.
-- HTML overlays render above the Excalidraw canvas; canvas text/shapes do not currently render on top of live overlays.
-- Excalidraw export outputs the drawing; live iframe DOM content is not preserved as interactive content.
-
-## Project Structure
-
-```text
-src/
-├── components/
-│   └── ExcalidrawViewer.tsx    # Excalidraw wrapper + media overlay and controls
-├── App.tsx                     # App shell and sample scene loading
-├── main.tsx                    # React entry point
-└── styles.css                  # Global and overlay styles
-
-public/
-└── arduino-day-2026.excalidraw           # Sample scene loaded on startup
-```
-
-## Component Contract
-
-### `ExcalidrawViewer` Props
-
-- `initialData: ExcalidrawInitialData` - Scene data used for initial load.
-- `onApiReady: (api: ExcalidrawImperativeAPI) => void` - Callback with minimal imperative API.
-
-### Embed `customData` contract
-
-Attach embed metadata to a rectangle-like Excalidraw element:
-
-```ts
-{
-  embedType?: "iframe";
-  embedKind?: "image" | "video" | "pdf" | "iframe";
-  src?: string;   // must be https://
-  title?: string;
-}
-```
-
-## Roadmap (optional future work)
-
-- Persist embed metadata and interaction preferences more explicitly in scene data.
-- Better contextual panel placement near viewport edges.
-- Optional domain allowlist/blocklist for embed URLs.
-- Optional fit-mode controls (`contain` vs `cover`) per embed.
-- Improved UX for creating embeds without prompts.
-
-## Browser Support
-
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
+- **Web:** [schoolai.linalopes.info](https://schoolai.linalopes.info)
+- **Address:** Schönaustrasse 13, 8620 Wetzikon, Zürich
 
 ## License
 
